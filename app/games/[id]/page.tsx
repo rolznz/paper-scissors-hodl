@@ -8,7 +8,6 @@ import {
   options,
   WIN_AMOUNT_SATS,
 } from "@/app/types";
-import { requestProvider } from "@getalby/bitcoin-connect-react";
 import { checkGame, replyGame } from "@/app/actions";
 
 export default function Game() {
@@ -24,6 +23,9 @@ export default function Game() {
       if (!selectedOption) {
         throw new Error("No option selected");
       }
+      const requestProvider = await import(
+        "@getalby/bitcoin-connect-react"
+      ).then((mod) => mod.requestProvider);
       const provider = await requestProvider();
       const ownInvoice = await provider.makeInvoice(WIN_AMOUNT_SATS);
       const { invoice } = await replyGame(

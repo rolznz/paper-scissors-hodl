@@ -2,7 +2,6 @@
 import React from "react";
 import { options, Option, GAME_AMOUNT_SATS, WIN_AMOUNT_SATS } from "./types";
 import { createGame } from "@/app/actions";
-import { requestProvider } from "@getalby/bitcoin-connect-react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -15,6 +14,9 @@ export default function Home() {
       if (!selectedOption) {
         throw new Error("No option selected");
       }
+      const requestProvider = await import(
+        "@getalby/bitcoin-connect-react"
+      ).then((mod) => mod.requestProvider);
       const provider = await requestProvider();
       const ownInvoice = await provider.makeInvoice(WIN_AMOUNT_SATS);
       const { invoice, paymentHash } = await createGame(
