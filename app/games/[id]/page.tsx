@@ -1,13 +1,22 @@
 "use client";
-import React from "react";
-import { options, Option, GAME_AMOUNT_SATS, WIN_AMOUNT_SATS } from "./types";
-import { createGame } from "@/app/actions";
-import { requestProvider } from "@getalby/bitcoin-connect-react";
-import { useRouter } from "next/navigation";
 
-export default function Home() {
-  const [selectedOption, setSelectedOption] = React.useState<Option>();
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import React from "react";
+import {
+  GAME_AMOUNT_SATS,
+  Option,
+  options,
+  WIN_AMOUNT_SATS,
+} from "@/app/types";
+import { requestProvider } from "@getalby/bitcoin-connect-react";
+import { checkGame, replyGame } from "@/app/actions";
+
+export default function Game() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
+
+  const [selectedOption, setSelectedOption] = React.useState<Option>();
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
 
@@ -17,13 +26,20 @@ export default function Home() {
       }
       const provider = await requestProvider();
       const ownInvoice = await provider.makeInvoice(WIN_AMOUNT_SATS);
-      const { invoice, paymentHash } = await createGame(
+      const { invoice } = await replyGame(
+        params.id,
         selectedOption,
         ownInvoice.paymentRequest
       );
+
       await provider.sendPayment(invoice);
 
-      router.push(`/games/${paymentHash}/share`);
+      const result = await checkGame(params.id, false);
+      if (result === "pending") {
+        alert("Something went wrong. Please try again");
+        return;
+      }
+      router.push(`/end?result=${result}`);
     } catch (error) {
       console.error(error);
       alert("Something went wrong: " + error);
@@ -54,7 +70,6 @@ export default function Home() {
         <button className="btn btn-primary mt-4">
           Choose & Pay {GAME_AMOUNT_SATS} sats
         </button>
-        {/* <p>If you win, you will receive {WIN_AMOUNT_SATS * 2} sats</p> */}
       </form>
     </>
   );
