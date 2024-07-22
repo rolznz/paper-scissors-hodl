@@ -9,6 +9,7 @@ import {
   WIN_AMOUNT_SATS,
 } from "@/app/types";
 import { checkGame, replyGame } from "@/app/actions";
+import { PlayForm } from "@/components/PlayForm";
 
 export default function Game() {
   const params = useParams<{ id: string }>();
@@ -27,7 +28,10 @@ export default function Game() {
         "@getalby/bitcoin-connect-react"
       ).then((mod) => mod.requestProvider);
       const provider = await requestProvider();
-      const ownInvoice = await provider.makeInvoice(WIN_AMOUNT_SATS);
+      const ownInvoice = await provider.makeInvoice({
+        amount: WIN_AMOUNT_SATS,
+        defaultMemo: "Paper Scissors HODL WIN invoice"
+      });
       const { invoice } = await replyGame(
         params.id,
         selectedOption,
@@ -48,31 +52,5 @@ export default function Game() {
     }
   }
 
-  return (
-    <>
-      <p>PAPER SCISSORS HODL</p>
-      <form onSubmit={onSubmit}>
-        {options.map((option) => (
-          <div className="form-control" key={option}>
-            <label className="label cursor-pointer">
-              <span className="label-text">{option}</span>
-              <input
-                id={option}
-                type="radio"
-                name="option"
-                className="radio checked:bg-red-500"
-                required
-                checked={option === selectedOption}
-                onChange={(e) => e.target.checked && setSelectedOption(option)}
-              />
-            </label>
-          </div>
-        ))}
-
-        <button className="btn btn-primary mt-4">
-          Choose & Pay {GAME_AMOUNT_SATS} sats
-        </button>
-      </form>
-    </>
-  );
+  return <PlayForm onSubmit={onSubmit} selectedOption={selectedOption} setSelectedOption={setSelectedOption} isOpponent/>
 }

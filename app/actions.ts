@@ -89,7 +89,7 @@ export async function checkGame(
     return "pending";
   }
 
-  if (!challengerTransaction.settled_at || !opponentTransaction.settled_at) {
+  if (!challengerTransaction.preimage || !opponentTransaction.preimage) {
     return "pending";
   }
 
@@ -112,24 +112,31 @@ export async function checkGame(
     result = isChallenger ? "lose" : "win";
   }
 
-  // only pay if not a draw
-  // this would not be an issue with HODL invoices
-  if (result !== "draw") {
-    // NOTE: the lightning transaction can only be paid once
-    // so future attempts will fail
-    try {
-      const challengerWon = isChallenger && result === "win";
-
-      const invoiceToPay = challengerWon
-        ? challengerTransaction.description.split(" ")[1]
-        : opponentTransaction.description.split(" ")[2];
-
-      await nwcClient.payInvoice({
-        invoice: invoiceToPay,
-      });
-    } catch (error) {
-      console.error(error);
+  if (result === "draw") {
+    // for now, we can't refund both users. So instead, pick one of the players to win
+    // using something only the server knows
+    const seed = parseInt((challengerTransaction.preimage.substring(0, 4) + opponentTransaction.preimage.substring(0, 4)), 16);
+    var x = Math.sin(seed) * 10000;
+    result = (x - Math.floor(x)) > 0.5 ? "win" : "lose";
+    if (!isChallenger) {
+      result = result === "win" ? "lose" : "win";
     }
+  }
+
+  // NOTE: the lightning transaction can only be paid once
+  // so future attempts will fail
+  try {
+    const challengerWon = isChallenger && result === "win";
+
+    const invoiceToPay = challengerWon
+      ? challengerTransaction.description.split(" ")[1]
+      : opponentTransaction.description.split(" ")[2];
+
+    await nwcClient.payInvoice({
+      invoice: invoiceToPay,
+    });
+  } catch (error) {
+    console.error(error);
   }
 
   return result;
