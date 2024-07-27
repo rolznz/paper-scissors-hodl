@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import React from "react";
+import { APP_NAME } from "./types";
 
 export const metadata: Metadata = {
-  title: "Paper Scissors HODL",
+  title: APP_NAME,
   description: "Paper Scissors Rock with sats at stake",
 };
 

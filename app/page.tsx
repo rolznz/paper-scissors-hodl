@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { options, Option, GAME_AMOUNT_SATS, WIN_AMOUNT_SATS } from "./types";
+import { Option, WIN_AMOUNT_SATS, APP_NAME } from "./types";
 import { createGame } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { PlayForm } from "@/components/PlayForm";
@@ -21,7 +21,7 @@ export default function Home() {
       const provider = await requestProvider();
       const ownInvoice = await provider.makeInvoice({
         amount: WIN_AMOUNT_SATS,
-        defaultMemo: "Paper Scissors HODL WIN invoice"
+        defaultMemo: `${APP_NAME} WIN invoice`,
       });
       const { invoice, paymentHash } = await createGame(
         selectedOption,
@@ -36,5 +36,11 @@ export default function Home() {
     }
   }
 
-  return <PlayForm onSubmit={onSubmit} selectedOption={selectedOption} setSelectedOption={setSelectedOption}/>
+  return (
+    <PlayForm
+      onSubmit={onSubmit}
+      selectedOption={selectedOption}
+      setSelectedOption={setSelectedOption}
+    />
+  );
 }

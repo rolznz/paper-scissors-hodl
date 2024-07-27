@@ -2,12 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
-import {
-  GAME_AMOUNT_SATS,
-  Option,
-  options,
-  WIN_AMOUNT_SATS,
-} from "@/app/types";
+import { APP_NAME, Option, WIN_AMOUNT_SATS } from "@/app/types";
 import { checkGame, replyGame } from "@/app/actions";
 import { PlayForm } from "@/components/PlayForm";
 
@@ -30,7 +25,7 @@ export default function Game() {
       const provider = await requestProvider();
       const ownInvoice = await provider.makeInvoice({
         amount: WIN_AMOUNT_SATS,
-        defaultMemo: "Paper Scissors HODL WIN invoice"
+        defaultMemo: `${APP_NAME} WIN invoice`,
       });
       const { invoice } = await replyGame(
         params.id,
@@ -52,5 +47,12 @@ export default function Game() {
     }
   }
 
-  return <PlayForm onSubmit={onSubmit} selectedOption={selectedOption} setSelectedOption={setSelectedOption} isOpponent/>
+  return (
+    <PlayForm
+      onSubmit={onSubmit}
+      selectedOption={selectedOption}
+      setSelectedOption={setSelectedOption}
+      isOpponent
+    />
+  );
 }

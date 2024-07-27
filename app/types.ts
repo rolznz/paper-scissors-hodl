@@ -5,3 +5,5 @@ export type GameResult = "win" | "lose" | "draw" | "pending";
 
 export const GAME_AMOUNT_SATS = 1000;
 export const WIN_AMOUNT_SATS = 1800;
+
+export const APP_NAME = "Paper Scissors HODL";

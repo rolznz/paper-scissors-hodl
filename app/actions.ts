@@ -1,8 +1,25 @@
 "use server";
 
-import { GAME_AMOUNT_SATS, GameResult, Option, WIN_AMOUNT_SATS } from "./types";
+import {
+  APP_NAME,
+  GAME_AMOUNT_SATS,
+  GameResult,
+  Option,
+  WIN_AMOUNT_SATS,
+} from "./types";
 import { nwc } from "@getalby/sdk";
 import { Invoice } from "@getalby/lightning-tools";
+
+type ChallengerInvoiceMetadata = {
+  option: Option;
+  winInvoice: string;
+};
+
+type OpponentInvoiceMetadata = {
+  gamePaymentHash: string;
+  option: Option;
+  winInvoice: string;
+};
 
 export async function createGame(
   challengerOption: Option,
@@ -20,11 +37,16 @@ export async function createGame(
     nostrWalletConnectUrl,
   });
 
-  // TODO: this would be easier if NWC supported passing metadata
-  const challengerTransaction = await nwcClient.makeInvoice({
-    amount: GAME_AMOUNT_SATS * 1000,
-    description: [challengerOption, challengerInvoice].join(" "),
-  });
+  const challengerTransaction = await nwcClient.makeInvoice(
+    {
+      amount: GAME_AMOUNT_SATS * 1000,
+      description: `${APP_NAME} payment`,
+      metadata: {
+        option: challengerOption,
+        winInvoice: challengerInvoice,
+      } satisfies ChallengerInvoiceMetadata,
+    } as nwc.Nip47MakeInvoiceRequest /* TODO: remove cast when JS SDK is updated */
+  );
 
   return {
     invoice: challengerTransaction.invoice,
@@ -49,11 +71,17 @@ export async function replyGame(
     nostrWalletConnectUrl,
   });
 
-  // TODO: this would be easier if NWC supported passing metadata
-  const transaction = await nwcClient.makeInvoice({
-    amount: GAME_AMOUNT_SATS * 1000,
-    description: [gamePaymentHash, opponentOption, opponentInvoice].join(" "),
-  });
+  const transaction = await nwcClient.makeInvoice(
+    {
+      amount: GAME_AMOUNT_SATS * 1000,
+      description: `${APP_NAME} payment`,
+      metadata: {
+        gamePaymentHash,
+        option: opponentOption,
+        winInvoice: opponentInvoice,
+      } satisfies OpponentInvoiceMetadata,
+    } as nwc.Nip47MakeInvoiceRequest /* TODO: remove cast when JS SDK is updated */
+  );
 
   return {
     invoice: transaction.invoice,
@@ -82,7 +110,9 @@ export async function checkGame(
   );
   const opponentTransaction = transactions.find(
     (t) =>
-      t.type === "incoming" && t.description.split(" ")[0] === gamePaymentHash
+      t.type === "incoming" &&
+      (t.metadata as OpponentInvoiceMetadata | undefined)?.gamePaymentHash ===
+        gamePaymentHash
   );
 
   if (!challengerTransaction || !opponentTransaction) {
@@ -93,12 +123,13 @@ export async function checkGame(
     return "pending";
   }
 
-  const challengerOption = challengerTransaction.description.split(
-    " "
-  )[0] as Option;
-  const opponentOption = opponentTransaction.description.split(
-    " "
-  )[1] as Option;
+  const challengerTransactionMetadata =
+    challengerTransaction.metadata as ChallengerInvoiceMetadata;
+  const opponentTransactionMetadata =
+    opponentTransaction.metadata as OpponentInvoiceMetadata;
+
+  const challengerOption = challengerTransactionMetadata.option;
+  const opponentOption = opponentTransactionMetadata.option;
 
   let result: GameResult = "draw";
 
@@ -115,9 +146,13 @@ export async function checkGame(
   if (result === "draw") {
     // for now, we can't refund both users. So instead, pick one of the players to win
     // using something only the server knows
-    const seed = parseInt((challengerTransaction.preimage.substring(0, 4) + opponentTransaction.preimage.substring(0, 4)), 16);
+    const seed = parseInt(
+      challengerTransaction.preimage.substring(0, 4) +
+        opponentTransaction.preimage.substring(0, 4),
+      16
+    );
     var x = Math.sin(seed) * 10000;
-    result = (x - Math.floor(x)) > 0.5 ? "win" : "lose";
+    result = x - Math.floor(x) > 0.5 ? "win" : "lose";
     if (!isChallenger) {
       result = result === "win" ? "lose" : "win";
     }
@@ -129,8 +164,8 @@ export async function checkGame(
     const challengerWon = isChallenger && result === "win";
 
     const invoiceToPay = challengerWon
-      ? challengerTransaction.description.split(" ")[1]
-      : opponentTransaction.description.split(" ")[2];
+      ? challengerTransactionMetadata.winInvoice
+      : opponentTransactionMetadata.winInvoice;
 
     await nwcClient.payInvoice({
       invoice: invoiceToPay,
