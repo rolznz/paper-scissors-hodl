@@ -4,28 +4,19 @@ import { Option, WIN_AMOUNT_SATS, APP_NAME } from "./types";
 import { createGame } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { PlayForm } from "@/components/PlayForm";
+import { WebLNProvider } from "@webbtc/webln-types";
 
 export default function Home() {
-  const [selectedOption, setSelectedOption] = React.useState<Option>();
   const router = useRouter();
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
-
+  async function onSubmit(
+    selectedOption: Option,
+    winInvoice: string,
+    provider: WebLNProvider
+  ) {
     try {
-      if (!selectedOption) {
-        throw new Error("No option selected");
-      }
-      const requestProvider = await import(
-        "@getalby/bitcoin-connect-react"
-      ).then((mod) => mod.requestProvider);
-      const provider = await requestProvider();
-      const ownInvoice = await provider.makeInvoice({
-        amount: WIN_AMOUNT_SATS,
-        defaultMemo: `${APP_NAME} WIN invoice`,
-      });
       const { invoice, paymentHash } = await createGame(
         selectedOption,
-        ownInvoice.paymentRequest
+        winInvoice
       );
       await provider.sendPayment(invoice);
 
@@ -36,11 +27,5 @@ export default function Home() {
     }
   }
 
-  return (
-    <PlayForm
-      onSubmit={onSubmit}
-      selectedOption={selectedOption}
-      setSelectedOption={setSelectedOption}
-    />
-  );
+  return <PlayForm onSubmit={onSubmit} />;
 }

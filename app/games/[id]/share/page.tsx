@@ -1,6 +1,7 @@
 "use client";
 
 import { checkGame } from "@/app/actions";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 export default function ShareGame() {
@@ -52,6 +53,9 @@ export default function ShareGame() {
       >
         Check Result
       </button>
+      <Link href="/" className="btn btn-secondary">
+        Play again!
+      </Link>
     </div>
   );
 }
