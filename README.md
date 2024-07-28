@@ -1,5 +1,7 @@
 # Paper Scissors HODL
 
+Powered by [Alby Hub](https://getalby.com)
+
 Paper Scissors Rock, but with sats at stake.
 
 Note: this prototype doesn't actually use HODL invoices.

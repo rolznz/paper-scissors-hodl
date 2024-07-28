@@ -2,40 +2,25 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
-import {
-  GAME_AMOUNT_SATS,
-  Option,
-  options,
-  WIN_AMOUNT_SATS,
-} from "@/app/types";
+import { APP_NAME, Option, WIN_AMOUNT_SATS } from "@/app/types";
 import { checkGame, replyGame } from "@/app/actions";
 import { PlayForm } from "@/components/PlayForm";
+import { WebLNProvider } from "@webbtc/webln-types";
 
 export default function Game() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [selectedOption, setSelectedOption] = React.useState<Option>();
-
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
-
+  async function onSubmit(
+    selectedOption: Option,
+    winInvoice: string,
+    provider: WebLNProvider
+  ) {
     try {
-      if (!selectedOption) {
-        throw new Error("No option selected");
-      }
-      const requestProvider = await import(
-        "@getalby/bitcoin-connect-react"
-      ).then((mod) => mod.requestProvider);
-      const provider = await requestProvider();
-      const ownInvoice = await provider.makeInvoice({
-        amount: WIN_AMOUNT_SATS,
-        defaultMemo: "Paper Scissors HODL WIN invoice"
-      });
       const { invoice } = await replyGame(
         params.id,
         selectedOption,
-        ownInvoice.paymentRequest
+        winInvoice
       );
 
       await provider.sendPayment(invoice);
@@ -52,5 +37,5 @@ export default function Game() {
     }
   }
 
-  return <PlayForm onSubmit={onSubmit} selectedOption={selectedOption} setSelectedOption={setSelectedOption} isOpponent/>
+  return <PlayForm onSubmit={onSubmit} isOpponent />;
 }

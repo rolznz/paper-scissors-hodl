@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import React from "react";
+import { APP_NAME } from "./types";
 
 export const metadata: Metadata = {
-  title: "Paper Scissors HODL",
+  title: APP_NAME,
   description: "Paper Scissors Rock with sats at stake",
 };
 
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="flex flex-col justify-center items-center w-full h-full">
-        {children}
+        <div className="flex flex-col justify-center items-center w-full h-full max-w-xs">
+          {children}
+        </div>
       </body>
     </html>
   );
