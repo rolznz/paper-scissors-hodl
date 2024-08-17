@@ -26,11 +26,11 @@ export default function Game() {
       await provider.sendPayment(invoice);
 
       const result = await checkGame(params.id, false);
-      if (result === "pending") {
+      if (result.status === "pending") {
         alert("Something went wrong. Please try again");
         return;
       }
-      router.push(`/end?result=${result}`);
+      router.push(`/end?result=${btoa(JSON.stringify(result))}`);
     } catch (error) {
       console.error(error);
       alert("Something went wrong: " + error);

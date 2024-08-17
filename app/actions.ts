@@ -4,6 +4,7 @@ import {
   APP_NAME,
   GAME_AMOUNT_SATS,
   GameResult,
+  GameStatus,
   Option,
   WIN_AMOUNT_SATS,
 } from "./types";
@@ -116,11 +117,11 @@ export async function checkGame(
   );
 
   if (!challengerTransaction || !opponentTransaction) {
-    return "pending";
+    return { status: "pending", options: [] };
   }
 
   if (!challengerTransaction.preimage || !opponentTransaction.preimage) {
-    return "pending";
+    return { status: "pending", options: [] };
   }
 
   const challengerTransactionMetadata =
@@ -131,19 +132,19 @@ export async function checkGame(
   const challengerOption = challengerTransactionMetadata.option;
   const opponentOption = opponentTransactionMetadata.option;
 
-  let result: GameResult = "draw";
+  let status: GameStatus = "draw";
 
   if (
     (challengerOption === "paper" && opponentOption === "rock") ||
     (challengerOption === "rock" && opponentOption === "scissors") ||
     (challengerOption === "scissors" && opponentOption === "paper")
   ) {
-    result = isChallenger ? "win" : "lose";
+    status = isChallenger ? "win" : "lose";
   } else if (challengerOption !== opponentOption) {
-    result = isChallenger ? "lose" : "win";
+    status = isChallenger ? "lose" : "win";
   }
 
-  if (result === "draw") {
+  if (status === "draw") {
     // for now, we can't refund both users. So instead, pick one of the players to win
     // using something only the server knows
     const seed = parseInt(
@@ -152,16 +153,16 @@ export async function checkGame(
       16
     );
     var x = Math.sin(seed) * 10000;
-    result = x - Math.floor(x) > 0.5 ? "win" : "lose";
+    status = x - Math.floor(x) > 0.5 ? "win" : "lose";
     if (!isChallenger) {
-      result = result === "win" ? "lose" : "win";
+      status = status === "win" ? "lose" : "win";
     }
   }
 
   // NOTE: the lightning transaction can only be paid once
   // so future attempts will fail
   try {
-    const challengerWon = isChallenger && result === "win";
+    const challengerWon = isChallenger && status === "win";
 
     const invoiceToPay = challengerWon
       ? challengerTransactionMetadata.winInvoice
@@ -174,5 +175,9 @@ export async function checkGame(
     console.error(error);
   }
 
-  return result;
+  const options = isChallenger
+    ? [challengerOption, opponentOption]
+    : [opponentOption, challengerOption];
+
+  return { status, options };
 }

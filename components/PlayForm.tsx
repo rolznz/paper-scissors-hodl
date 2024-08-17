@@ -99,11 +99,7 @@ export function PlayForm({ onSubmit, isOpponent }: PlayFormProps) {
           }`}
           disabled={isLoading}
         >
-          {isLoading ? (
-            <>Loading...</>
-          ) : (
-            <>Choose & Pay {GAME_AMOUNT_SATS} sats</>
-          )}
+          {isLoading ? <>Loading...</> : <>Choose</>}
         </button>
         <div className="w-full flex flex-col items-center justify-center gap-4">
           <Link href="/about" className="link text-xs mt-8">
