@@ -72,6 +72,10 @@ export async function replyGame(
     nostrWalletConnectUrl,
   });
 
+  if (await checkGameEnded(gamePaymentHash)) {
+    throw new Error("Game already ended");
+  }
+
   const transaction = await nwcClient.makeInvoice(
     {
       amount: GAME_AMOUNT_SATS * 1000,
@@ -87,6 +91,37 @@ export async function replyGame(
   return {
     invoice: transaction.invoice,
   };
+}
+
+export async function checkGameEnded(gamePaymentHash: string) {
+  const nostrWalletConnectUrl = process.env.NWC_URL;
+  if (!nostrWalletConnectUrl) {
+    throw new Error("No NWC_URL set");
+  }
+  const nwcClient = new nwc.NWCClient({
+    nostrWalletConnectUrl,
+  });
+
+  // TODO: use limit instead of time-based paging
+  let until: number | undefined;
+  while (true) {
+    const { transactions } = await nwcClient.listTransactions({
+      until,
+    });
+    if (!transactions.length) {
+      return false;
+    }
+    const opponentTransaction = transactions.find(
+      (t) =>
+        t.type === "incoming" &&
+        (t.metadata as OpponentInvoiceMetadata | undefined)?.gamePaymentHash ===
+          gamePaymentHash
+    );
+    if (opponentTransaction) {
+      return true;
+    }
+    until = transactions[transactions.length - 1].created_at - 1;
+  }
 }
 
 export async function checkGame(
