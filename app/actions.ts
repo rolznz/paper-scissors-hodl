@@ -197,15 +197,28 @@ export async function checkGame(
   // NOTE: the lightning transaction can only be paid once
   // so future attempts will fail
   try {
-    const challengerWon = isChallenger && status === "win";
+    const challengerWon =
+      (isChallenger && status === "win") ||
+      (!isChallenger && status === "lose");
 
     const invoiceToPay = challengerWon
       ? challengerTransactionMetadata.winInvoice
       : opponentTransactionMetadata.winInvoice;
 
+    console.log(
+      "Attempting to pay to",
+      challengerWon ? "challenger" : "opponent",
+      invoiceToPay
+    );
+
     await nwcClient.payInvoice({
       invoice: invoiceToPay,
     });
+    console.log(
+      "Paid to ",
+      challengerWon ? "challenger" : "opponent",
+      invoiceToPay
+    );
   } catch (error) {
     console.error(error);
   }
